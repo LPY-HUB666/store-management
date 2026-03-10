@@ -1,0 +1,3373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>加盟交付管理系统 · 实时同步版</title>
+    <style>
+        /* ============================================
+           全局样式 - 完整保留
+        ============================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* ============================================
+           头部区域
+        ============================================ */
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 30px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            border-radius: 20px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(106, 17, 203, 0.2);
+            position: relative;
+        }
+        
+        .dashboard-header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .dashboard-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .add-store-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+        
+        .add-store-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* ============================================
+           同步状态指示器
+        ============================================ */
+        .sync-status {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(5px);
+        }
+        
+        .sync-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        .sync-indicator.syncing {
+            background: #f59e0b;
+            animation: pulse 1s infinite;
+        }
+        
+        .sync-indicator.error {
+            background: #ef4444;
+            animation: none;
+        }
+        
+        .sync-indicator.warning {
+            background: #f59e0b;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* ============================================
+           门店卡片区域
+        ============================================ */
+        .store-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .store-card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border-top: 5px solid #4a6ee0;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .store-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        }
+        
+        .store-card.opened {
+            border-top-color: #10b981;
+        }
+        
+        .store-card.in-progress {
+            border-top-color: #f59e0b;
+        }
+        
+        .store-card.pending {
+            border-top-color: #64748b;
+        }
+        
+        .store-status {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: 8px 20px;
+            border-bottom-left-radius: 15px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+        }
+        
+        .opened .store-status {
+            background: #10b981;
+        }
+        
+        .in-progress .store-status {
+            background: #f59e0b;
+        }
+        
+        .pending .store-status {
+            background: #64748b;
+        }
+        
+        .store-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-right: 80px;
+        }
+        
+        .store-name {
+            font-size: 1.6rem;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .store-actions-menu {
+            display: flex;
+            gap: 5px;
+            position: relative;
+        }
+        
+        .action-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #64748b;
+            font-size: 1.1rem;
+            user-select: none;
+        }
+        
+        .action-icon:hover {
+            background: #f1f5f9;
+            color: #4a6ee0;
+        }
+        
+        .delete-icon:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+        
+        .store-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-grow: 1;
+        }
+        
+        .store-info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #64748b;
+        }
+        
+        .store-info-item i {
+            width: 24px;
+            text-align: center;
+            color: #4a6ee0;
+        }
+        
+        .store-progress {
+            margin-top: auto;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: #64748b;
+        }
+        
+        .progress-bar-small {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill-small {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+        
+        .opened .progress-fill-small {
+            background: #10b981;
+        }
+        
+        .in-progress .progress-fill-small {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+        
+        .pending .progress-fill-small {
+            background: #64748b;
+        }
+        
+        .store-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .store-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+            font-size: 0.95rem;
+            user-select: none;
+        }
+        
+        .view-btn {
+            background: #4a6ee0;
+            color: white;
+        }
+        
+        .view-btn:hover {
+            background: #3a5ed0;
+            transform: translateY(-2px);
+        }
+        
+        .manage-btn {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        .manage-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        
+        /* ============================================
+           建店流程区域
+        ============================================ */
+        .process-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        
+        .section-header h2 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .section-header h2 i {
+            color: #4a6ee0;
+        }
+        
+        .process-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .store-selector {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .store-selector:hover {
+            border-color: #4a6ee0;
+        }
+        
+        .expand-all-btn {
+            padding: 10px 20px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .expand-all-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        
+        .collapse-all-btn {
+            padding: 10px 20px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .collapse-all-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        
+        .process-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .process-phase {
+            background: #f8fafc;
+            border-radius: 15px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .process-phase:hover {
+            box-shadow: 0 8px 20px rgba(74, 110, 224, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .process-phase.expanded {
+            box-shadow: 0 10px 25px rgba(74, 110, 224, 0.15);
+        }
+        
+        .phase-header {
+            padding: 22px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: linear-gradient(90deg, rgba(74, 110, 224, 0.05) 0%, rgba(106, 17, 203, 0.05) 100%);
+            border-bottom: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .phase-header:hover {
+            background: linear-gradient(90deg, rgba(74, 110, 224, 0.08) 0%, rgba(106, 17, 203, 0.08) 100%);
+        }
+        
+        .phase-header.active {
+            background: linear-gradient(90deg, rgba(74, 110, 224, 0.12) 0%, rgba(106, 17, 203, 0.12) 100%);
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .phase-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .phase-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4a6ee0, #6a11cb);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        
+        .phase-text {
+            flex: 1;
+        }
+        
+        .phase-text h3 {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .phase-text p {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+        
+        .phase-status {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .phase-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 120px;
+        }
+        
+        .phase-progress-text {
+            font-size: 0.9rem;
+            color: #64748b;
+            min-width: 40px;
+            text-align: right;
+        }
+        
+        .phase-progress-bar {
+            width: 60px;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .phase-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a6ee0, #6a11cb);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.8s ease;
+        }
+        
+        .completed .phase-progress-fill {
+            background: #10b981;
+        }
+        
+        .in-progress .phase-progress-fill {
+            background: #f59e0b;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            flex-shrink: 0;
+        }
+        
+        .status-indicator.completed {
+            background: #10b981;
+        }
+        
+        .status-indicator.in-progress {
+            background: #f59e0b;
+            animation: pulse 2s infinite;
+        }
+        
+        .toggle-icon {
+            font-size: 1.5rem;
+            color: #4a6ee0;
+            transition: transform 0.3s ease;
+            margin-left: 10px;
+            flex-shrink: 0;
+        }
+        
+        .toggle-icon.expanded {
+            transform: rotate(180deg);
+        }
+        
+        .phase-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .phase-content.expanded {
+            padding: 25px;
+            max-height: 5000px;
+        }
+        
+        .tasks-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 18px;
+        }
+        
+        .task-item {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            transition: all 0.2s ease;
+        }
+        
+        .task-item:hover {
+            border-color: #4a6ee0;
+            box-shadow: 0 5px 15px rgba(74, 110, 224, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        
+        .task-checkbox:hover {
+            border-color: #4a6ee0;
+        }
+        
+        .task-checkbox.checked {
+            background: #4a6ee0;
+            border-color: #4a6ee0;
+        }
+        
+        .task-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        .task-content {
+            flex: 1;
+        }
+        
+        .task-content h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .task-priority {
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        
+        .task-priority.high {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .task-priority.medium {
+            background: #fef3c7;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        
+        .task-priority.low {
+            background: #dbeafe;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+        
+        .task-content > p {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        
+        .task-detail {
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #475569;
+        }
+        
+        .task-detail p {
+            margin-bottom: 6px;
+        }
+        
+        .task-detail ul, .task-detail ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .task-detail li {
+            margin-bottom: 4px;
+        }
+        
+        .task-detail strong {
+            color: #374151;
+        }
+        
+        .task-detail table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.85rem;
+        }
+        
+        .task-detail th {
+            background: #e2e8f0;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .task-detail td {
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* ============================================
+           整体进度统计
+        ============================================ */
+        .overall-progress {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        }
+        
+        .progress-bar-large {
+            height: 10px;
+            background: #e2e8f0;
+            border-radius: 5px;
+            margin-top: 25px;
+            overflow: hidden;
+        }
+        
+        .progress-fill-large {
+            height: 100%;
+            background: linear-gradient(90deg, #4a6ee0, #6a11cb);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.8s ease;
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 1rem;
+        }
+        
+        .progress-text span:first-child {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .progress-text span:last-child {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #4a6ee0;
+        }
+        
+        .stats-footer {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .stat-label {
+            color: #64748b;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        /* ============================================
+           模态框样式
+        ============================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+            position: relative;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f5f9;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 1;
+        }
+        
+        .modal-header h2 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: #64748b;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            padding: 5px;
+        }
+        
+        .close-modal:hover {
+            color: #4a6ee0;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #475569;
+            font-weight: 600;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #4a6ee0;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding-top: 20px;
+            border-top: 2px solid #f1f5f9;
+        }
+        
+        .btn-primary {
+            padding: 12px 25px;
+            background: #4a6ee0;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .btn-primary:hover {
+            background: #3a5ed0;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            padding: 12px 25px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .btn-secondary:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        /* 运营数据模态框 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4a6ee0;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label-small {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+        
+        .revenue-chart {
+            height: 200px;
+            background: linear-gradient(to top, #4a6ee0, #6a11cb);
+            border-radius: 12px;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-bar {
+            position: absolute;
+            bottom: 0;
+            width: 30px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.5s ease;
+        }
+        
+        .chart-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        .form-buttons-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding-top: 20px;
+            border-top: 2px solid #f1f5f9;
+        }
+        
+        .cancel-btn {
+            padding: 12px 25px;
+            background: #f1f5f9;
+            color: #475569;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .cancel-btn:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        
+        .confirm-btn {
+            padding: 12px 25px;
+            background: #4a6ee0;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+        }
+        
+        .confirm-btn:hover {
+            background: #3a5ed0;
+            transform: translateY(-2px);
+        }
+        
+        /* 编辑按钮的移动端优化 */
+        .edit-actions-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .edit-actions-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            min-width: 150px;
+            z-index: 100;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .edit-actions-dropdown.show {
+            display: block;
+        }
+        
+        .edit-action-item {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f1f5f9;
+            color: #475569;
+            text-decoration: none;
+        }
+        
+        .edit-action-item:last-child {
+            border-bottom: none;
+        }
+        
+        .edit-action-item:hover {
+            background: #f8fafc;
+            color: #4a6ee0;
+        }
+        
+        .edit-action-item.delete:hover {
+            color: #ef4444;
+            background: #fee2e2;
+        }
+        
+        .edit-action-item i {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+        
+        /* ============================================
+           同步按钮区域
+        ============================================ */
+        .sync-buttons-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .sync-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .sync-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .share-btn {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+        }
+        
+        .sync-now-btn {
+            background: #10b981;
+            color: white;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 20px;
+            }
+            
+            .dashboard-header h1 {
+                font-size: 2rem;
+            }
+            
+            .add-store-btn {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin-top: 15px;
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .sync-status {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 10px;
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .store-overview {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .process-controls {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+            
+            .store-selector {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .tasks-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .store-actions {
+                flex-direction: column;
+            }
+            
+            .phase-header {
+                padding: 18px 20px;
+            }
+            
+            .phase-text h3 {
+                font-size: 1.2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                padding: 20px;
+                max-height: 85vh;
+            }
+            
+            .form-buttons-group {
+                flex-direction: column;
+            }
+            
+            .cancel-btn, .confirm-btn {
+                width: 100%;
+            }
+            
+            .sync-buttons-container {
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+                flex-direction: row;
+                justify-content: center;
+            }
+            
+            .sync-btn {
+                padding: 10px 15px;
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .process-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .expand-all-btn, .collapse-all-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .store-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+                padding-right: 0;
+            }
+            
+            .store-actions-menu {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+            }
+            
+            .store-name {
+                font-size: 1.4rem;
+                margin-top: 10px;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .btn-primary, .btn-secondary {
+                width: 100%;
+            }
+            
+            .sync-buttons-container {
+                flex-wrap: wrap;
+            }
+            
+            .sync-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部标题区域 -->
+        <div class="dashboard-header">
+            <div class="sync-status" id="syncStatus">
+                <div class="sync-indicator" id="syncIndicator"></div>
+                <span id="syncText">实时同步中...</span>
+            </div>
+            <h1>加盟交付管理系统</h1>
+            <p>一站式加盟门店交付管理平台 · 多端实时同步</p>
+            <button class="add-store-btn" id="addStoreBtn">
+                <i>+</i> 添加新门店
+            </button>
+        </div>
+        
+        <!-- 门店总览区域 -->
+        <div class="store-overview" id="storeOverview">
+            <!-- 门店卡片会通过JavaScript动态生成 -->
+        </div>
+        
+        <!-- 建店流程区域 -->
+        <div class="process-section" id="process-section">
+            <div class="section-header">
+                <h2><i>🏗️</i> 建店流程管理</h2>
+                <div class="process-controls">
+                    <select class="store-selector" id="store-selector">
+                        <!-- 门店选项会通过JavaScript动态生成 -->
+                    </select>
+                    <button class="expand-all-btn" id="expandAllBtn">
+                        <i>⬇️</i> 展开全部
+                    </button>
+                    <button class="collapse-all-btn" id="collapseAllBtn">
+                        <i>⬆️</i> 收起全部
+                    </button>
+                </div>
+            </div>
+            
+            <div class="process-container">
+                <!-- 第一阶段：选址阶段 -->
+                <div class="process-phase" id="phase-location">
+                    <div class="phase-header" data-phase="location">
+                        <div class="phase-title">
+                            <div class="phase-icon">1</div>
+                            <div class="phase-text">
+                                <h3>选址阶段 <span class="phase-progress-text">0%</span></h3>
+                                <p>确定最佳门店位置（12个步骤）</p>
+                            </div>
+                        </div>
+                        <div class="phase-status">
+                            <div class="phase-progress">
+                                <div class="phase-progress-bar">
+                                    <div class="phase-progress-fill" id="location-progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="status-indicator"></div>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="phase-content" id="location-content">
+                        <div class="tasks-list">
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤1：加盟商签约后首次沟通 <span class="task-priority high">高优先级</span></h4>
+                                    <p><strong>负责人：</strong>选址专员 | <strong>预计周期：</strong>1天</p>
+                                    <div class="task-detail">
+                                        <p><strong>核心任务：</strong></p>
+                                        <ul>
+                                            <li>群内打招呼，自我介绍</li>
+                                            <li>将选址资料发至群内</li>
+                                            <li>询问时间电话沟通</li>
+                                            <li>沟通核心事项（开店意向区域、面积需求范围、装修预算、租金预算范围、特殊需求）</li>
+                                        </ul>
+                                        <p><strong>重要提示：</strong>询问加盟商是否参与技术及前端培训，如参与需提前在内部群沟通。</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤2：线上初步筛选，选址专员线下初选与考察 <span class="task-priority high">高优先级</span></h4>
+                                    <p><strong>负责人：</strong>选址专员 | <strong>预计周期：</strong>3-5天</p>
+                                    <div class="task-detail">
+                                        <p><strong>线上平台：</strong>58同城、安居客、贝壳找房</p>
+                                        <p><strong>筛选方法：</strong></p>
+                                        <ul>
+                                            <li>按区域、面积、租金筛选</li>
+                                            <li>地图找房功能圈定范围</li>
+                                            <li>如线上房源少，则标注重点社区/商圈，计划实地扫街</li>
+                                            <li>扫街同时去线下德佑、大唐房屋等线下房产门店进行选址咨询</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤3：制定初选路线并实地考察 <span class="task-priority medium">中优先级</span></h4>
+                                    <p><strong>负责人：</strong>选址专员</p>
+                                    <div class="task-detail">
+                                        <p><strong>考察动作清单：</strong></p>
+                                        <ul>
+                                            <li>核对房源信息真实性</li>
+                                            <li>录制店铺内外360°视频，发至选址群</li>
+                                            <li>定位准确地址，通过安居客APP调查楼盘信息</li>
+                                            <li>竞品调研：周边500米内宠物店数量、主营业务、定价、门店形象、客流</li>
+                                            <li>养宠密度调研：咨询快递站、观察遛狗人群、宠物店客流、社区微信群等</li>
+                                            <li>人流与交通评估：工作日/周末、早晚高峰时段人流量、车流停留可能性</li>
+                                            <li>物业合规确认：向房东/物业初步确认"是否允许经营宠物店"</li>
+                                            <li>工商开户确认：是否可以正常办理营业执照等手续</li>
+                                            <li>拍照与笔记：记录周边环境、道路状况、停车条件、可视性</li>
+                                        </ul>
+                                        <p><strong>附件：</strong>填写《选址标准与流程》</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤4：初选信息整理</h4>
+                                    <p>当日整理符合条件的商铺信息，填写《Little Tail小尾巴初步选址信息表》，备注推荐理由与风险点。</p>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤5：邀约加盟商共同考察</h4>
+                                    <p>选址初选后第3-5天，筛选出3-5个优质备选选址。与加盟商约定时间，制定合理考察路线。提前预约房东/中介到场开门。</p>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤6：共同实地考察</h4>
+                                    <p>选址专员全程陪同，录制视频。重点检查：承重墙、柱位、层高、电力容量、通水排污、通风设施。</p>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤7-12：后续流程</h4>
+                                    <div class="task-detail">
+                                        <ul>
+                                            <li>步骤7：初步意向选址确认</li>
+                                            <li>步骤8：公司审定</li>
+                                            <li>步骤9：租赁条件谈判</li>
+                                            <li>步骤10：合同签署与备案</li>
+                                            <li>步骤11：物业交接与费用结清</li>
+                                            <li>步骤12：装修前期对接</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第二阶段：手续阶段 -->
+                <div class="process-phase" id="phase-procedures">
+                    <div class="phase-header" data-phase="procedures">
+                        <div class="phase-title">
+                            <div class="phase-icon">2</div>
+                            <div class="phase-text">
+                                <h3>手续阶段 <span class="phase-progress-text">0%</span></h3>
+                                <p>办理所有必要的行政手续（4个步骤）</p>
+                            </div>
+                        </div>
+                        <div class="phase-status">
+                            <div class="phase-progress">
+                                <div class="phase-progress-bar">
+                                    <div class="phase-progress-fill" id="procedures-progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="status-indicator"></div>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="phase-content" id="procedures-content">
+                        <div class="tasks-list">
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤13：购买工作机 <span class="task-priority low">低优先级</span></h4>
+                                    <div class="task-detail">
+                                        <p><strong>工作机配置要求：</strong></p>
+                                        <ul>
+                                            <li>提醒加盟商购买店铺专用工作机</li>
+                                            <li>办理新手机卡</li>
+                                            <li>联系通讯运营商安装监控、无线网络</li>
+                                            <li>店铺手机卡拿到后提醒新媒体团队建号改资料（抖音、小红书）</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤14：工商开户 <span class="task-priority medium">中优先级</span></h4>
+                                    <p><strong>预计周期：</strong>3-5天</p>
+                                    <div class="task-detail">
+                                        <p><strong>房东需准备材料：</strong>身份证复印件、房产证（或购房合同）每一页复印件</p>
+                                        <p><strong>办理方式：</strong></p>
+                                        <ul>
+                                            <li><strong>个人办理：</strong>需向商铺所在地街道办事处咨询办理手续</li>
+                                            <li><strong>公司办理：</strong>需刻章开公户（公章、财务章、法人章），费用200-300元。执照办理后进行税务报道。</li>
+                                            <li><strong>委托代办：</strong>费用约500-1000元，包含刻章（公章、财务章、法人章）</li>
+                                        </ul>
+                                        <p><strong>税务核定关键点：</strong></p>
+                                        <ul>
+                                            <li>尽量申请"定期定额"</li>
+                                            <li>建议月营业额核定在3万元以上，以保障开票需求</li>
+                                            <li>密码管理：天府通办密码、税务登录密码等必须记录并安全存档</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤15：招牌备案</h4>
+                                    <p>营业执照下发后同步进行招牌备案。将品牌方需要准备的资料交给加盟商。将加盟商需要准备的资料以表格形式发给他们。</p>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤16：招牌安装</h4>
+                                    <p>招牌备案下发后告知装修负责人李老师进行招牌安装。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第三阶段：装修阶段 -->
+                <div class="process-phase" id="phase-renovation">
+                    <div class="phase-header" data-phase="renovation">
+                        <div class="phase-title">
+                            <div class="phase-icon">3</div>
+                            <div class="phase-text">
+                                <h3>装修阶段 <span class="phase-progress-text">0%</span></h3>
+                                <p>门店设计与施工装修（4个步骤）</p>
+                            </div>
+                        </div>
+                        <div class="phase-status">
+                            <div class="phase-progress">
+                                <div class="phase-progress-bar">
+                                    <div class="phase-progress-fill" id="renovation-progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="status-indicator"></div>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="phase-content" id="renovation-content">
+                        <div class="tasks-list">
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤17：水电与打围 <span class="task-priority high">高优先级</span></h4>
+                                    <div class="task-detail">
+                                        <p><strong>1. 打围：</strong></p>
+                                        <ul>
+                                            <li>咨询商铺所在的社区街道办，装修期间是否需要进行打围</li>
+                                            <li>需要打围，将打围尺寸告知设计师贺姐对接打围广告</li>
+                                        </ul>
+                                        <p><strong>2. 设备采购（需要单独收款）：</strong></p>
+                                        <ul>
+                                            <li>一般在交店前一周采购</li>
+                                            <li>交店前两天设备应到场</li>
+                                            <li>群内告知加盟商设备采购清单及价格明细</li>
+                                            <li>设备沟通群中跟进沟通，咨询快递单号清楚快递进程</li>
+                                        </ul>
+                                        <p><strong>3. 拍摄素材：</strong></p>
+                                        <ul>
+                                            <li>通知新媒体老师拍摄装修素材</li>
+                                            <li>及时对社交账号开业预热进行更新</li>
+                                            <li>装修期间应该随时探店，明确进度</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤18：板墙上墙 <span class="task-priority medium">中优先级</span></h4>
+                                    <div class="task-detail">
+                                        <p><strong>空间植入物料清单：</strong></p>
+                                        <div style="overflow-x: auto;">
+                                            <table style="width: 100%; border-collapse: collapse;">
+                                                <thead>
+                                                    <tr style="background: #f1f5f9;">
+                                                        <th style="padding: 8px 12px; text-align: left; border: 1px solid #e2e8f0;">物料名称</th>
+                                                        <th style="padding: 8px 12px; text-align: left; border: 1px solid #e2e8f0;">安装位置/材质</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">前台LOGO-分区木板</td><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">前台</td></tr>
+                                                    <tr><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">中药台定制相框-木质挂夹</td><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">中药台</td></tr>
+                                                    <tr><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">健康有方定制相框-宣纸</td><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">墙面</td></tr>
+                                                    <tr><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">经络图定制相框-中药立牌</td><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">展示区</td></tr>
+                                                    <tr><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">汤药价格及定制相框-消防栓</td><td style="padding: 8px 12px; border: 1px solid #e2e8f0;">消防栓装饰</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <p><strong>开业活动物料（同时购买）：</strong>代金券/折扣券、传单、抽奖箱、展架、菜单等。</p>
+                                        <p><strong>注意：</strong>将《物料费用清单》发送至合作群进行确认。</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤19：选品采买</h4>
+                                    <p>内部群提醒鑫哥门店运营团队进行选品采买。与加盟商进行对接确认。墙板上墙时就可以开始提醒。</p>
+                                </div>
+                            </div>
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤20：线上搭建</h4>
+                                    <p>抖音、小红书、美团线上平台搭建。试营业期间提醒完成所有平台视频、图文铺垫。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第四阶段：交店阶段 -->
+                <div class="process-phase" id="phase-delivery">
+                    <div class="phase-header" data-phase="delivery">
+                        <div class="phase-title">
+                            <div class="phase-icon">4</div>
+                            <div class="phase-text">
+                                <h3>交店阶段 <span class="phase-progress-text">0%</span></h3>
+                                <p>设备安装与验收交接（1个步骤）</p>
+                            </div>
+                        </div>
+                        <div class="phase-status">
+                            <div class="phase-progress">
+                                <div class="phase-progress-bar">
+                                    <div class="phase-progress-fill" id="delivery-progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="status-indicator"></div>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="phase-content" id="delivery-content">
+                        <div class="tasks-list">
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤21：硬装结束与交付 <span class="task-priority high">高优先级</span></h4>
+                                    <div class="task-detail">
+                                        <p><strong>交付前准备：</strong></p>
+                                        <ul>
+                                            <li>与装修，加盟商确定交付时间</li>
+                                            <li>内部群提前告知全体成员</li>
+                                        </ul>
+                                        <p><strong>交付日流程：</strong></p>
+                                        <ol>
+                                            <li>设备进场-系统安装</li>
+                                            <li>货品进场-货品陈列（只做提醒工作）</li>
+                                            <li>物料安装</li>
+                                            <li>美团、抖音开通（开通后发至加盟群）—询问后端运营部门试营业时间，通知相关人员上线团购</li>
+                                            <li>腾讯、高德定位（做好后发至加盟群）</li>
+                                        </ol>
+                                        <p><strong>交付完成：</strong></p>
+                                        <ul>
+                                            <li>与加盟商签订竣工验收单、物料验收清单</li>
+                                            <li>内部群与加盟群同步沟通，交接工作</li>
+                                            <li>后续工作交给后端运营部门，建店工作圆满完成</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第五阶段：试营业阶段 -->
+                <div class="process-phase" id="phase-trial">
+                    <div class="phase-header" data-phase="trial">
+                        <div class="phase-title">
+                            <div class="phase-icon">5</div>
+                            <div class="phase-text">
+                                <h3>试营业阶段 <span class="phase-progress-text">0%</span></h3>
+                                <p>开业准备与试运营（1个步骤）</p>
+                            </div>
+                        </div>
+                        <div class="phase-status">
+                            <div class="phase-progress">
+                                <div class="phase-progress-bar">
+                                    <div class="phase-progress-fill" id="trial-progress-bar"></div>
+                                </div>
+                            </div>
+                            <div class="status-indicator"></div>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                    </div>
+                    <div class="phase-content" id="trial-content">
+                        <div class="tasks-list">
+                            <div class="task-item">
+                                <div class="task-checkbox" data-store="高新店"></div>
+                                <div class="task-content">
+                                    <h4>步骤22：开业活动策划 <span class="task-priority high">高优先级</span></h4>
+                                    <div class="task-detail">
+                                        <p><strong>前期准备：</strong></p>
+                                        <ul>
+                                            <li>与市场运营对接，出加盟店开业活动策划书，发给加盟商确认</li>
+                                            <li>与后端负责人（鑫哥）沟通开业具体时间</li>
+                                            <li>确认后内部群告知全体成员加盟店的开业时间</li>
+                                            <li>提前订花篮（三个公司名义订三对）</li>
+                                        </ul>
+                                        <p><strong>物料准备：</strong>提前告知加盟商准备：剪刀、礼花、彩带、气球、音响话筒。按照加盟商喜好布置即可（一定要提前告知）。</p>
+                                        <p><strong>开业日流程：</strong></p>
+                                        <ol>
+                                            <li>提前上午到场</li>
+                                            <li>新媒体成员拍摄开业视频</li>
+                                            <li>交付专员明确致辞嘉宾与剪彩仪式名单</li>
+                                            <li>主导主持开业活动</li>
+                                            <li>提醒新媒体成员，剪辑发布开业视频</li>
+                                            <li>交店圆满完成</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 整体进度统计 -->
+        <div class="overall-progress">
+            <div class="section-header">
+                <h2><i>📊</i> 整体进度统计</h2>
+            </div>
+            <div class="progress-text">
+                <span>当前门店建店进度</span>
+                <span id="overall-progress-percentage">0%</span>
+            </div>
+            <div class="progress-bar-large">
+                <div class="progress-fill-large" id="overall-progress-bar"></div>
+            </div>
+            
+            <!-- 底部统计卡片 -->
+            <div class="stats-footer">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-stores">0</div>
+                    <div class="stat-label">总门店数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="completed-tasks">0</div>
+                    <div class="stat-label">已完成任务</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-tasks">0</div>
+                    <div class="stat-label">总任务数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avg-progress">0%</div>
+                    <div class="stat-label">平均进度</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 添加/编辑门店模态框 -->
+    <div class="modal" id="storeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">添加新门店</h2>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <form id="storeForm">
+                <div class="form-group">
+                    <label for="storeName">门店名称 *</label>
+                    <input type="text" id="storeName" class="form-control" required placeholder="例如：旗舰店 - 市中心">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="storeAddress">门店地址 *</label>
+                        <input type="text" id="storeAddress" class="form-control" required placeholder="例如：人民路123号">
+                    </div>
+                    <div class="form-group">
+                        <label for="storeManager">负责人 *</label>
+                        <input type="text" id="storeManager" class="form-control" required placeholder="例如：张经理">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="storeStatus">门店状态 *</label>
+                        <select id="storeStatus" class="form-control" required>
+                            <option value="pending">待开业</option>
+                            <option value="in-progress">建店中</option>
+                            <option value="opened">已开业</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="storeDate">日期 *</label>
+                        <input type="date" id="storeDate" class="form-control" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="storeRevenue">预计月营收（元）</label>
+                    <input type="number" id="storeRevenue" class="form-control" placeholder="例如：256800">
+                </div>
+                
+                <div class="form-group">
+                    <label for="storeNotes">备注信息</label>
+                    <textarea id="storeNotes" class="form-control" rows="3" placeholder="可添加门店的额外信息..."></textarea>
+                </div>
+                
+                <div class="form-buttons-group">
+                    <button type="button" class="cancel-btn" id="cancelFormBtn">取消</button>
+                    <button type="submit" class="confirm-btn" id="confirmAddBtn">确认添加</button>
+                </div>
+                
+                <div class="form-actions" id="deleteAction" style="display: none; margin-top: 10px;">
+                    <button type="button" class="btn-secondary btn-danger" id="deleteBtn">删除门店</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 门店详情模态框 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="detailTitle">门店详情</h2>
+                <button class="close-modal" id="closeDetailModal">&times;</button>
+            </div>
+            <div id="storeDetailContent">
+                <!-- 详情内容会通过JavaScript动态生成 -->
+            </div>
+            <div class="form-actions" style="margin-top: 30px;">
+                <button type="button" class="btn-secondary" id="closeDetailBtn">关闭</button>
+                <button type="button" class="btn-primary" id="editDetailBtn">编辑门店</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 运营数据模态框 -->
+    <div class="modal" id="operationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="operationTitle">运营数据</h2>
+                <button class="close-modal" id="closeOperationModal">&times;</button>
+            </div>
+            <div id="operationContent">
+                <!-- 运营数据内容会通过JavaScript动态生成 -->
+            </div>
+            <div class="form-actions" style="margin-top: 30px;">
+                <button type="button" class="btn-secondary" id="closeOperationBtn">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // JSONBin.io 云同步配置
+        // ============================================
+        
+        // 您的JSONBin.io配置
+        const JSONBIN_API_KEY = '$2a$10$rkylJeuwAOdPIlQ76IDNW.72bJHe9Ydxyc1Vep1Rnfk3yLKejAdiC';
+        const JSONBIN_BIN_ID = '699d475aae596e708f4474e6';
+        const USE_CLOUD_STORAGE = true;
+        
+        // 数据存储键名
+        const STORAGE_KEYS = {
+            STORES: 'store_delivery_stores',
+            LAST_SYNC: 'store_delivery_last_sync',
+            DEVICE_ID: 'store_delivery_device_id'
+        };
+        
+        // 门店数据存储
+        let stores = [];
+        let currentStoreId = null;
+        let currentEditingStoreId = null;
+        let activeEditDropdown = null;
+        let deviceId = null;
+        let isOnline = navigator.onLine;
+        let uploadTimeout = null;
+        let isSyncing = false;
+        let lastSyncTime = 0;
+        const SYNC_INTERVAL = 5000; // 5秒同步一次
+        
+        // DOM元素
+        const storeOverview = document.getElementById('storeOverview');
+        const storeSelector = document.getElementById('store-selector');
+        const addStoreBtn = document.getElementById('addStoreBtn');
+        const expandAllBtn = document.getElementById('expandAllBtn');
+        const collapseAllBtn = document.getElementById('collapseAllBtn');
+        const processSection = document.getElementById('process-section');
+        const syncIndicator = document.getElementById('syncIndicator');
+        const syncText = document.getElementById('syncText');
+        
+        // 模态框元素
+        const storeModal = document.getElementById('storeModal');
+        const detailModal = document.getElementById('detailModal');
+        const operationModal = document.getElementById('operationModal');
+        const closeModalBtn = document.getElementById('closeModal');
+        const closeDetailModalBtn = document.getElementById('closeDetailModal');
+        const closeOperationModalBtn = document.getElementById('closeOperationModal');
+        const closeDetailBtn = document.getElementById('closeDetailBtn');
+        const closeOperationBtn = document.getElementById('closeOperationBtn');
+        const editDetailBtn = document.getElementById('editDetailBtn');
+        const storeForm = document.getElementById('storeForm');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const deleteAction = document.getElementById('deleteAction');
+        const modalTitle = document.getElementById('modalTitle');
+        const confirmAddBtn = document.getElementById('confirmAddBtn');
+        const cancelFormBtn = document.getElementById('cancelFormBtn');
+        
+        // ============================================
+        // 设备ID生成函数
+        // ============================================
+        
+        function generateDeviceId() {
+            if (!deviceId) {
+                deviceId = localStorage.getItem(STORAGE_KEYS.DEVICE_ID);
+                if (!deviceId) {
+                    deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem(STORAGE_KEYS.DEVICE_ID, deviceId);
+                }
+            }
+            return deviceId;
+        }
+        
+        // ============================================
+        // 本地存储函数
+        // ============================================
+        
+        function saveToLocalStorage() {
+            try {
+                const data = {
+                    stores: stores,
+                    currentStoreId: currentStoreId,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(STORAGE_KEYS.STORES, JSON.stringify(data));
+                console.log('数据已保存到本地存储');
+                return true;
+            } catch (error) {
+                console.error('保存到本地存储失败:', error);
+                updateSyncStatus('error', '本地保存失败');
+                return false;
+            }
+        }
+        
+        function loadFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEYS.STORES);
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    stores = data.stores || [];
+                    currentStoreId = data.currentStoreId || (stores.length > 0 ? stores[0].id : null);
+                    
+                    // 确保所有门店都有完整的tasks数据结构
+                    stores.forEach(store => {
+                        const expectedLengths = {
+                            'location': 12,
+                            'procedures': 4,
+                            'renovation': 4,
+                            'delivery': 1,
+                            'trial': 1
+                        };
+                        
+                        if (!store.tasks) {
+                            store.tasks = {};
+                        }
+                        
+                        for (const [phase, length] of Object.entries(expectedLengths)) {
+                            if (!store.tasks[phase] || store.tasks[phase].length !== length) {
+                                store.tasks[phase] = new Array(length).fill(false);
+                            }
+                        }
+                    });
+                    
+                    console.log('从本地存储加载数据成功，门店数量:', stores.length);
+                    return true;
+                }
+            } catch (error) {
+                console.error('从本地存储加载数据失败:', error);
+            }
+            return false;
+        }
+        
+        // ============================================
+        // 实时云同步函数 - 修复版（永久解决数据丢失）
+        // ============================================
+        
+        async function uploadToCloud() {
+            if (!USE_CLOUD_STORAGE || !navigator.onLine || isSyncing) {
+                return false;
+            }
+            
+            try {
+                isSyncing = true;
+                updateSyncStatus('syncing', '同步中...');
+                
+                const cloudData = {
+                    stores: stores,
+                    currentStoreId: currentStoreId,
+                    lastSync: Date.now(),
+                    deviceId: generateDeviceId(),
+                    version: 1
+                };
+                
+                console.log('上传数据到云端...');
+                
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': JSONBIN_API_KEY,
+                        'X-Bin-Versioning': 'false'
+                    },
+                    body: JSON.stringify(cloudData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('上传成功');
+                    lastSyncTime = Date.now();
+                    localStorage.setItem(STORAGE_KEYS.LAST_SYNC, lastSyncTime.toString());
+                    updateSyncStatus('success', '已同步');
+                    return true;
+                } else {
+                    const errorText = await response.text();
+                    console.error('上传失败:', response.status);
+                    updateSyncStatus('error', `上传失败`);
+                    return false;
+                }
+            } catch (error) {
+                console.error('上传过程出错:', error);
+                updateSyncStatus('error', '网络错误');
+                return false;
+            } finally {
+                isSyncing = false;
+            }
+        }
+        
+        async function downloadFromCloud() {
+            if (!USE_CLOUD_STORAGE || !navigator.onLine || isSyncing) {
+                return false;
+            }
+            
+            try {
+                isSyncing = true;
+                
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': JSONBIN_API_KEY
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const cloudData = data.record;
+                    
+                    if (cloudData && cloudData.stores) {
+                        console.log('下载到云端数据:', cloudData.stores.length, '个门店');
+                        
+                        stores = cloudData.stores;
+                        currentStoreId = cloudData.currentStoreId || (stores.length > 0 ? stores[0].id : null);
+                        
+                        // 确保任务数据结构正确
+                        stores.forEach(store => {
+                            const expectedLengths = {
+                                'location': 12,
+                                'procedures': 4,
+                                'renovation': 4,
+                                'delivery': 1,
+                                'trial': 1
+                            };
+                            
+                            if (!store.tasks) {
+                                store.tasks = {};
+                            }
+                            
+                            for (const [phase, length] of Object.entries(expectedLengths)) {
+                                if (!store.tasks[phase] || store.tasks[phase].length !== length) {
+                                    store.tasks[phase] = new Array(length).fill(false);
+                                }
+                            }
+                        });
+                        
+                        saveToLocalStorage();
+                        refreshAllComponents();
+                        updateSyncStatus('success', '已更新');
+                        return true;
+                    }
+                } else if (response.status === 404) {
+                    // 云端不存在，上传当前数据
+                    await uploadToCloud();
+                }
+                return false;
+            } catch (error) {
+                console.error('下载过程出错:', error);
+                return false;
+            } finally {
+                isSyncing = false;
+            }
+        }
+        
+        // ============================================
+        // 修复后的实时同步函数（永久解决数据丢失）
+        // ============================================
+        
+        async function realTimeSync() {
+            if (!USE_CLOUD_STORAGE || !navigator.onLine) {
+                console.log('云同步未启用或离线状态');
+                return false;
+            }
+            
+            const now = Date.now();
+            if (now - lastSyncTime < 3000) {
+                return false;
+            }
+            
+            try {
+                // 1. 先获取云端数据
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    method: 'GET',
+                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
+                });
+
+                // --- 重点修复 1：处理云端不存在或为空的情况 ---
+                if (!response.ok || response.status === 404) {
+                    console.log('云端无数据，上传本地数据作为初始备份');
+                    // 直接上传本地数据，并用本地时间戳标记，让云端认本地为“老大”
+                    return await uploadToCloud(); 
+                }
+
+                const data = await response.json();
+                const cloudData = data.record;
+
+                // --- 重点修复 2：处理云端数据为空数组的情况（新Bin的默认状态）---
+                if (!cloudData || !cloudData.stores || cloudData.stores.length === 0) {
+                    console.log('云端数据为空，上传本地数据覆盖云端');
+                    return await uploadToCloud();
+                }
+
+                // --- 核心逻辑：比较数据版本，以更新、更全的为准 ---
+                const cloudTime = cloudData.lastSync || 0;
+                const localTime = parseInt(localStorage.getItem(STORAGE_KEYS.LAST_SYNC) || '0');
+                
+                // 计算本地门店数量
+                const localStoreCount = stores ? stores.length : 0;
+                const cloudStoreCount = cloudData.stores ? cloudData.stores.length : 0;
+
+                // 情况 A：云端时间更新，且云端数据不为空，则下载云端
+                if (cloudTime > localTime && cloudStoreCount > 0) {
+                    console.log('云端数据较新，自动下载');
+                    stores = cloudData.stores;
+                    currentStoreId = cloudData.currentStoreId;
+                    saveToLocalStorage();
+                    refreshAllComponents();
+                    updateSyncStatus('success', '已从云端同步');
+                } 
+                // 情况 B：本地时间更新，或本地有数据而云端为空，则上传本地
+                else if (localTime > cloudTime || (localStoreCount > 0 && cloudStoreCount === 0)) {
+                    console.log('本地有更新或本地数据更丰富，自动上传');
+                    await uploadToCloud();
+                } 
+                // 情况 C：时间相等或无法判断，以门店数量多的为准（防呆保护）
+                else if (localStoreCount > cloudStoreCount) {
+                    console.log('本地门店更多，以上传本地为准');
+                    await uploadToCloud();
+                } else if (cloudStoreCount > localStoreCount) {
+                    console.log('云端门店更多，以下载云端为准');
+                    stores = cloudData.stores;
+                    currentStoreId = cloudData.currentStoreId;
+                    saveToLocalStorage();
+                    refreshAllComponents();
+                    updateSyncStatus('success', '已从云端同步');
+                }
+                else {
+                    console.log('数据已同步');
+                    updateSyncStatus('success', '数据已同步');
+                }
+
+                return true;
+            } catch (error) {
+                console.error('实时同步出错:', error);
+                return false;
+            }
+        }
+        
+        // ============================================
+        // 更新同步状态
+        // ============================================
+        
+        function updateSyncStatus(status, text) {
+            syncIndicator.className = 'sync-indicator';
+            syncIndicator.classList.add(status);
+            syncText.textContent = text;
+        }
+        
+        // ============================================
+        // 加载默认数据
+        // ============================================
+        
+        function loadDefaultData() {
+            const now = Date.now();
+            stores = [
+                {
+                    id: 1,
+                    name: "旗舰店 - 市中心",
+                    address: "人民路123号",
+                    manager: "张经理",
+                    status: "opened",
+                    date: "2023-06-15",
+                    revenue: 256800,
+                    notes: "旗舰门店，业绩表现优秀",
+                    progress: 95,
+                    tasks: {
+                        'location': new Array(12).fill(true),
+                        'procedures': new Array(4).fill(true),
+                        'renovation': new Array(4).fill(true),
+                        'delivery': new Array(1).fill(true),
+                        'trial': new Array(1).fill(true)
+                    },
+                    createdAt: now,
+                    updatedAt: now
+                },
+                {
+                    id: 2,
+                    name: "新店 - 高新区",
+                    address: "创新路456号",
+                    manager: "李总监",
+                    status: "in-progress",
+                    date: "2023-12-20",
+                    revenue: 0,
+                    notes: "正在建设中，预计12月开业",
+                    progress: 30,
+                    tasks: {
+                        'location': [true, true, true, false, false, false, false, false, false, false, false, false],
+                        'procedures': [false, false, false, false],
+                        'renovation': [false, false, false, false],
+                        'delivery': [false],
+                        'trial': [false]
+                    },
+                    createdAt: now,
+                    updatedAt: now
+                },
+                {
+                    id: 3,
+                    name: "规划店 - 东城区",
+                    address: "文化路789号",
+                    manager: "王经理",
+                    status: "pending",
+                    date: "2024-03-01",
+                    revenue: 0,
+                    notes: "前期调研阶段，计划明年启动",
+                    progress: 15,
+                    tasks: {
+                        'location': [true, false, false, false, false, false, false, false, false, false, false, false],
+                        'procedures': [false, false, false, false],
+                        'renovation': [false, false, false, false],
+                        'delivery': [false],
+                        'trial': [false]
+                    },
+                    createdAt: now,
+                    updatedAt: now
+                }
+            ];
+            
+            currentStoreId = stores.find(s => s.status === 'in-progress')?.id || stores[0]?.id;
+        }
+        
+        // ============================================
+        // 数据保存和加载
+        // ============================================
+        
+        function saveData() {
+            const now = Date.now();
+            localStorage.setItem(STORAGE_KEYS.LAST_SYNC, now.toString());
+            
+            if (saveToLocalStorage()) {
+                updateSyncStatus('success', '已保存');
+                
+                if (USE_CLOUD_STORAGE && navigator.onLine) {
+                    if (uploadTimeout) clearTimeout(uploadTimeout);
+                    uploadTimeout = setTimeout(() => {
+                        uploadToCloud();
+                    }, 1000);
+                }
+            }
+        }
+        
+        function loadData() {
+            updateSyncStatus('syncing', '加载数据中...');
+            
+            generateDeviceId();
+            
+            if (loadFromLocalStorage()) {
+                updateSyncStatus('success', '本地数据已加载');
+                
+                if (USE_CLOUD_STORAGE && navigator.onLine) {
+                    setTimeout(() => {
+                        downloadFromCloud();
+                    }, 1000);
+                }
+            } else {
+                loadDefaultData();
+                saveData();
+            }
+        }
+        
+        // ============================================
+        // 获取可分享的网址
+        // ============================================
+        
+        function getShareableUrl() {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('data');
+            return url.toString();
+        }
+        
+        function generateShareLink() {
+            const shareUrl = getShareableUrl();
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('✅ 分享链接已复制到剪贴板！\n\n请将此链接发送给微信好友，他们可以直接在手机浏览器中打开，实时查看和修改数据。');
+                }).catch(() => {
+                    prompt('请复制以下链接发送给好友：', shareUrl);
+                });
+            } else {
+                prompt('请复制以下链接发送给好友：', shareUrl);
+            }
+            
+            return shareUrl;
+        }
+        
+        // ============================================
+        // 添加手动同步按钮
+        // ============================================
+        
+        function addManualSyncButton() {
+            const syncButtonsContainer = document.createElement('div');
+            syncButtonsContainer.className = 'sync-buttons-container';
+            
+            const shareButton = document.createElement('button');
+            shareButton.className = 'sync-btn share-btn';
+            shareButton.innerHTML = '📱 分享网址';
+            shareButton.onclick = generateShareLink;
+            
+            const syncButton = document.createElement('button');
+            syncButton.className = 'sync-btn sync-now-btn';
+            syncButton.innerHTML = '🔄 立即同步';
+            syncButton.onclick = realTimeSync;
+            
+            syncButtonsContainer.appendChild(shareButton);
+            syncButtonsContainer.appendChild(syncButton);
+            
+            document.body.appendChild(syncButtonsContainer);
+        }
+        
+        // ============================================
+        // 门店卡片渲染函数
+        // ============================================
+        
+        function renderStoreCards() {
+            storeOverview.innerHTML = '';
+            
+            if (stores.length === 0) {
+                storeOverview.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 50px; background: white; border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.08);">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">🏪</div>
+                        <h3 style="color: #2c3e50; margin-bottom: 10px;">暂无门店</h3>
+                        <p style="color: #64748b; margin-bottom: 30px;">点击上方"添加新门店"按钮开始创建您的第一个门店</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const statusGroups = {
+                'opened': stores.filter(store => store.status === 'opened'),
+                'in-progress': stores.filter(store => store.status === 'in-progress'),
+                'pending': stores.filter(store => store.status === 'pending')
+            };
+            
+            for (const [status, storeList] of Object.entries(statusGroups)) {
+                if (storeList.length > 0) {
+                    storeList.forEach(store => {
+                        const storeCard = createStoreCard(store);
+                        storeOverview.appendChild(storeCard);
+                    });
+                }
+            }
+        }
+        
+        function createStoreCard(store) {
+            const card = document.createElement('div');
+            card.className = `store-card ${store.status}`;
+            card.dataset.id = store.id;
+            
+            const statusText = {
+                'opened': '已开业',
+                'in-progress': '建店中',
+                'pending': '待开业'
+            }[store.status];
+            
+            const dateText = store.status === 'opened' ? '开业时间' : 
+                            store.status === 'in-progress' ? '计划开业' : '计划启动';
+            
+            const revenueText = store.revenue > 0 ? 
+                `月均营收：¥${store.revenue.toLocaleString()}` : 
+                `预计营收：待评估`;
+            
+            card.innerHTML = `
+                <div class="store-status">${statusText}</div>
+                <div class="store-header">
+                    <h3 class="store-name">${store.name}</h3>
+                    <div class="store-actions-menu edit-actions-container">
+                        <div class="action-icon edit-store-toggle" title="编辑选项" data-store-id="${store.id}">
+                            <i>⋯</i>
+                        </div>
+                        <div class="edit-actions-dropdown" id="edit-actions-${store.id}">
+                            <div class="edit-action-item edit-store-action" data-store-id="${store.id}">
+                                <i>✏️</i>
+                                <span>编辑门店</span>
+                            </div>
+                            <div class="edit-action-item delete delete-store-action" data-store-id="${store.id}">
+                                <i>🗑️</i>
+                                <span>删除门店</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="store-info">
+                    <div class="store-info-item">
+                        <i>📍</i>
+                        <span>${store.address}</span>
+                    </div>
+                    <div class="store-info-item">
+                        <i>👨‍💼</i>
+                        <span>负责人：${store.manager}</span>
+                    </div>
+                    <div class="store-info-item">
+                        <i>📅</i>
+                        <span>${dateText}：${store.date}</span>
+                    </div>
+                    <div class="store-info-item">
+                        <i>💰</i>
+                        <span>${revenueText}</span>
+                    </div>
+                    ${store.notes ? `<div class="store-info-item">
+                        <i>📋</i>
+                        <span>${store.notes}</span>
+                    </div>` : ''}
+                </div>
+                ${store.status !== 'opened' ? `
+                <div class="store-progress">
+                    <div class="progress-label">
+                        <span>${store.status === 'in-progress' ? '建店进度' : '筹备进度'}</span>
+                        <span>${store.progress}%</span>
+                    </div>
+                    <div class="progress-bar-small">
+                        <div class="progress-fill-small" style="width: ${store.progress}%"></div>
+                    </div>
+                </div>
+                ` : ''}
+                <div class="store-actions">
+                    <button class="store-btn view-btn" data-action="view">查看详情</button>
+                    <button class="store-btn manage-btn" data-action="manage">${store.status === 'opened' ? '运营数据' : store.status === 'in-progress' ? '继续建店' : '启动项目'}</button>
+                </div>
+            `;
+            
+            const viewBtn = card.querySelector('.view-btn');
+            const manageBtn = card.querySelector('.manage-btn');
+            const editToggleBtn = card.querySelector('.edit-store-toggle');
+            const editActionItems = card.querySelectorAll('.edit-action-item');
+            
+            viewBtn.addEventListener('click', () => showStoreDetail(store.id));
+            manageBtn.addEventListener('click', () => handleManageAction(store.id));
+            
+            editToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const dropdown = card.querySelector('.edit-actions-dropdown');
+                
+                if (activeEditDropdown && activeEditDropdown !== editToggleBtn.parentElement) {
+                    const otherDropdown = activeEditDropdown.querySelector('.edit-actions-dropdown');
+                    if (otherDropdown) otherDropdown.classList.remove('show');
+                }
+                
+                dropdown.classList.toggle('show');
+                activeEditDropdown = dropdown.classList.contains('show') ? editToggleBtn.parentElement : null;
+            });
+            
+            editActionItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const storeId = parseInt(item.dataset.storeId);
+                    
+                    if (item.classList.contains('edit-store-action')) {
+                        openEditStoreModal(storeId);
+                    } else if (item.classList.contains('delete-store-action')) {
+                        confirmDeleteStore(storeId);
+                    }
+                    
+                    const dropdown = item.closest('.edit-actions-dropdown');
+                    if (dropdown) dropdown.classList.remove('show');
+                    activeEditDropdown = null;
+                });
+            });
+            
+            return card;
+        }
+        
+        // ============================================
+        // 门店操作函数
+        // ============================================
+        
+        function handleManageAction(storeId) {
+            const store = stores.find(s => s.id === storeId);
+            if (!store) return;
+            
+            if (store.status === 'opened') {
+                showOperationData(storeId);
+            } else if (store.status === 'in-progress') {
+                currentStoreId = storeId;
+                storeSelector.value = storeId;
+                loadStoreData(storeId);
+                focusOnProcess();
+            } else if (store.status === 'pending') {
+                startStoreConstruction(storeId);
+            }
+        }
+        
+        function startStoreConstruction(storeId) {
+            const store = stores.find(s => s.id === storeId);
+            if (!store) return;
+            
+            if (confirm(`确定要启动 "${store.name}" 的建店项目吗？`)) {
+                store.status = 'in-progress';
+                store.progress = 5;
+                store.updatedAt = Date.now();
+                
+                store.tasks = {
+                    'location': new Array(12).fill(false),
+                    'procedures': new Array(4).fill(false),
+                    'renovation': new Array(4).fill(false),
+                    'delivery': new Array(1).fill(false),
+                    'trial': new Array(1).fill(false)
+                };
+                
+                refreshAllComponents(storeId);
+                saveData();
+                alert(`已成功启动 "${store.name}" 的建店项目！`);
+            }
+        }
+        
+        function renderStoreSelector() {
+            storeSelector.innerHTML = '';
+            
+            const inProgressStores = stores.filter(store => store.status === 'in-progress');
+            
+            if (inProgressStores.length === 0) {
+                storeSelector.innerHTML = '<option value="">暂无建店中门店</option>';
+                return;
+            }
+            
+            inProgressStores.forEach(store => {
+                const option = document.createElement('option');
+                option.value = store.id;
+                option.textContent = `${store.name}（建店中）`;
+                storeSelector.appendChild(option);
+            });
+            
+            storeSelector.value = currentStoreId;
+        }
+        
+        // ============================================
+        // 模态框函数
+        // ============================================
+        
+        function initModalEvents() {
+            addStoreBtn.addEventListener('click', openAddStoreModal);
+            closeModalBtn.addEventListener('click', () => storeModal.style.display = 'none');
+            closeDetailModalBtn.addEventListener('click', () => detailModal.style.display = 'none');
+            closeOperationModalBtn.addEventListener('click', () => operationModal.style.display = 'none');
+            cancelFormBtn.addEventListener('click', () => storeModal.style.display = 'none');
+            closeDetailBtn.addEventListener('click', () => detailModal.style.display = 'none');
+            closeOperationBtn.addEventListener('click', () => operationModal.style.display = 'none');
+            
+            editDetailBtn.addEventListener('click', () => {
+                const detailStoreId = parseInt(detailModal.dataset.storeId);
+                detailModal.style.display = 'none';
+                openEditStoreModal(detailStoreId);
+            });
+            
+            storeForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveStore();
+            });
+            
+            deleteBtn.addEventListener('click', function() {
+                if (currentEditingStoreId) {
+                    confirmDeleteStore(currentEditingStoreId, true);
+                }
+            });
+            
+            storeSelector.addEventListener('change', function() {
+                currentStoreId = parseInt(this.value);
+                if (!isNaN(currentStoreId)) {
+                    loadStoreData(currentStoreId);
+                }
+            });
+            
+            storeModal.addEventListener('click', function(e) {
+                if (e.target === storeModal) storeModal.style.display = 'none';
+            });
+            
+            detailModal.addEventListener('click', function(e) {
+                if (e.target === detailModal) detailModal.style.display = 'none';
+            });
+            
+            operationModal.addEventListener('click', function(e) {
+                if (e.target === operationModal) operationModal.style.display = 'none';
+            });
+        }
+        
+        function openAddStoreModal() {
+            modalTitle.textContent = '添加新门店';
+            confirmAddBtn.textContent = '确认添加';
+            confirmAddBtn.style.display = 'block';
+            deleteAction.style.display = 'none';
+            
+            storeForm.reset();
+            currentEditingStoreId = null;
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('storeDate').value = today;
+            
+            storeModal.style.display = 'flex';
+            
+            setTimeout(() => {
+                document.getElementById('storeName').focus();
+            }, 300);
+        }
+        
+        function openEditStoreModal(storeId) {
+            const store = stores.find(s => s.id === storeId);
+            if (!store) return;
+            
+            modalTitle.textContent = '编辑门店信息';
+            confirmAddBtn.textContent = '确认更新';
+            confirmAddBtn.style.display = 'block';
+            deleteAction.style.display = 'flex';
+            currentEditingStoreId = storeId;
+            
+            document.getElementById('storeName').value = store.name;
+            document.getElementById('storeAddress').value = store.address;
+            document.getElementById('storeManager').value = store.manager;
+            document.getElementById('storeStatus').value = store.status;
+            document.getElementById('storeDate').value = store.date;
+            document.getElementById('storeRevenue').value = store.revenue || '';
+            document.getElementById('storeNotes').value = store.notes || '';
+            
+            storeModal.style.display = 'flex';
+            
+            setTimeout(() => {
+                document.getElementById('storeName').focus();
+            }, 300);
+        }
+        
+        function saveStore() {
+            const storeName = document.getElementById('storeName').value.trim();
+            const storeAddress = document.getElementById('storeAddress').value.trim();
+            const storeManager = document.getElementById('storeManager').value.trim();
+            const storeStatus = document.getElementById('storeStatus').value;
+            const storeDate = document.getElementById('storeDate').value;
+            const storeRevenue = document.getElementById('storeRevenue').value;
+            const storeNotes = document.getElementById('storeNotes').value.trim();
+            
+            if (!storeName || !storeAddress || !storeManager || !storeStatus || !storeDate) {
+                alert('请填写所有必填字段！');
+                return;
+            }
+            
+            const now = Date.now();
+            
+            if (currentEditingStoreId) {
+                const storeIndex = stores.findIndex(s => s.id === currentEditingStoreId);
+                if (storeIndex !== -1) {
+                    stores[storeIndex].name = storeName;
+                    stores[storeIndex].address = storeAddress;
+                    stores[storeIndex].manager = storeManager;
+                    stores[storeIndex].status = storeStatus;
+                    stores[storeIndex].date = storeDate;
+                    stores[storeIndex].revenue = parseInt(storeRevenue) || 0;
+                    stores[storeIndex].notes = storeNotes;
+                    stores[storeIndex].updatedAt = now;
+                    
+                    if (stores[storeIndex].status !== 'in-progress') {
+                        stores[storeIndex].tasks = {
+                            'location': new Array(12).fill(false),
+                            'procedures': new Array(4).fill(false),
+                            'renovation': new Array(4).fill(false),
+                            'delivery': new Array(1).fill(false),
+                            'trial': new Array(1).fill(false)
+                        };
+                        stores[storeIndex].progress = storeStatus === 'opened' ? 100 : 0;
+                    }
+                    
+                    if (storeStatus === 'in-progress' && stores[storeIndex].tasks) {
+                        calculateStoreProgress(stores[storeIndex]);
+                    }
+                    
+                    if (storeStatus === 'in-progress') {
+                        currentStoreId = currentEditingStoreId;
+                    }
+                }
+            } else {
+                const newId = stores.length > 0 ? Math.max(...stores.map(s => s.id)) + 1 : 1;
+                const newStore = {
+                    id: newId,
+                    name: storeName,
+                    address: storeAddress,
+                    manager: storeManager,
+                    status: storeStatus,
+                    date: storeDate,
+                    revenue: parseInt(storeRevenue) || 0,
+                    notes: storeNotes,
+                    progress: storeStatus === 'opened' ? 100 : (storeStatus === 'in-progress' ? 0 : 0),
+                    tasks: {
+                        'location': new Array(12).fill(false),
+                        'procedures': new Array(4).fill(false),
+                        'renovation': new Array(4).fill(false),
+                        'delivery': new Array(1).fill(false),
+                        'trial': new Array(1).fill(false)
+                    },
+                    createdAt: now,
+                    updatedAt: now
+                };
+                
+                stores.push(newStore);
+                
+                if (storeStatus === 'in-progress') {
+                    currentStoreId = newId;
+                }
+            }
+            
+            refreshAllComponents();
+            saveData();
+            storeModal.style.display = 'none';
+            
+            if (!currentEditingStoreId) {
+                alert(`新门店 "${storeName}" 已成功添加到${getStatusText(storeStatus)}板块！`);
+                
+                if (storeStatus === 'in-progress') {
+                    setTimeout(() => {
+                        const newStoreCard = document.querySelector(`.store-card[data-id="${currentStoreId}"]`);
+                        if (newStoreCard) {
+                            newStoreCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            newStoreCard.style.boxShadow = '0 0 0 3px rgba(74, 110, 224, 0.3)';
+                            newStoreCard.style.transition = 'box-shadow 0.5s ease';
+                            setTimeout(() => { newStoreCard.style.boxShadow = ''; }, 2000);
+                        }
+                    }, 500);
+                }
+            } else {
+                alert('门店信息已更新！');
+            }
+        }
+        
+        function refreshAllComponents() {
+            renderStoreCards();
+            renderStoreSelector();
+            updateStatistics();
+            
+            if (currentStoreId) {
+                loadStoreData(currentStoreId);
+            }
+        }
+        
+        function getStatusText(status) {
+            const statusMap = {
+                'opened': '已开业',
+                'in-progress': '建店中',
+                'pending': '待开业'
+            };
+            return statusMap[status] || status;
+        }
+        
+        function showStoreDetail(storeId) {
+            const store = stores.find(s => s.id === storeId);
+            if (!store) return;
+            
+            document.getElementById('detailTitle').textContent = store.name;
+            detailModal.dataset.storeId = storeId;
+            
+            const statusText = getStatusText(store.status);
+            const dateText = store.status === 'opened' ? '开业时间' : 
+                            store.status === 'in-progress' ? '计划开业' : '计划启动';
+            
+            const detailContent = document.getElementById('storeDetailContent');
+            detailContent.innerHTML = `
+                <div style="margin-bottom: 25px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <span style="padding: 6px 15px; background: ${store.status === 'opened' ? '#10b981' : store.status === 'in-progress' ? '#f59e0b' : '#64748b'}; color: white; border-radius: 20px; font-weight: 600; font-size: 0.9rem;">
+                            ${statusText}
+                        </span>
+                        ${store.status !== 'opened' ? `<span style="font-weight: 600; color: #4a6ee0;">进度：${store.progress}%</span>` : ''}
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div>
+                            <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">门店地址</h4>
+                            <p style="color: #2c3e50; font-weight: 500;">${store.address}</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">负责人</h4>
+                            <p style="color: #2c3e50; font-weight: 500;">${store.manager}</p>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div>
+                            <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">${dateText}</h4>
+                            <p style="color: #2c3e50; font-weight: 500;">${store.date}</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">${store.revenue > 0 ? '月均营收' : '预计营收'}</h4>
+                            <p style="color: #2c3e50; font-weight: 500;">${store.revenue > 0 ? '¥' + store.revenue.toLocaleString() : '待评估'}</p>
+                        </div>
+                    </div>
+                    
+                    ${store.notes ? `
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">备注信息</h4>
+                        <p style="color: #2c3e50; line-height: 1.5; background: #f8fafc; padding: 15px; border-radius: 10px;">${store.notes}</p>
+                    </div>
+                    ` : ''}
+                    
+                    ${store.status === 'in-progress' ? `
+                    <div style="margin-top: 25px;">
+                        <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">建店进度详情</h4>
+                        <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 5px;">
+                            <div style="height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); width: ${store.progress}%; transition: width 0.8s ease;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #64748b;">
+                            <span>已完成 ${store.progress}%</span>
+                            <span>剩余 ${100 - store.progress}%</span>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            detailModal.style.display = 'flex';
+        }
+        
+        function showOperationData(storeId) {
+            const store = stores.find(s => s.id === storeId);
+            if (!store) return;
+            
+            document.getElementById('operationTitle').textContent = `${store.name} - 运营数据`;
+            
+            const months = ['1月', '2月', '3月', '4月', '5月', '6月'];
+            const revenues = months.map(() => Math.floor(store.revenue * (0.8 + Math.random() * 0.4)));
+            
+            const operationContent = document.getElementById('operationContent');
+            operationContent.innerHTML = `
+                <div style="margin-bottom: 25px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div>
+                            <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">门店状态</h4>
+                            <p style="color: #2c3e50; font-weight: 500; padding: 6px 15px; background: #10b981; color: white; border-radius: 20px; display: inline-block;">已开业</p>
+                        </div>
+                        <div>
+                            <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">开业时间</h4>
+                            <p style="color: #2c3e50; font-weight: 500;">${store.date}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value">¥${store.revenue.toLocaleString()}</div>
+                            <div class="stat-label-small">月均营收</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">${Math.floor(store.revenue / 30).toLocaleString()}</div>
+                            <div class="stat-label-small">日均营收</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">${Math.floor(store.revenue / 100).toLocaleString()}</div>
+                            <div class="stat-label-small">月均客流量</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">¥${Math.floor(store.revenue / (store.revenue / 100))}</div>
+                            <div class="stat-label-small">客单价</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin: 25px 0;">
+                        <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 15px;">月度营收趋势</h4>
+                        <div class="revenue-chart" id="revenueChart">
+                            ${months.map((month, index) => {
+                                const height = 30 + (revenues[index] / Math.max(...revenues)) * 140;
+                                const left = 20 + index * 60;
+                                return `<div class="chart-bar" style="left: ${left}px; height: ${height}px;"></div>`;
+                            }).join('')}
+                        </div>
+                        <div class="chart-labels">
+                            ${months.map(month => `<span>${month}</span>`).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 25px;">
+                        <h4 style="color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">近期表现</h4>
+                        <div style="background: #f8fafc; padding: 15px; border-radius: 10px;">
+                            <p style="color: #2c3e50; line-height: 1.5;">
+                                该门店自开业以来表现稳定，月均营收保持在 ¥${store.revenue.toLocaleString()} 左右，
+                                客户满意度较高，运营状况良好。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            operationModal.style.display = 'flex';
+        }
+        
+        function confirmDeleteStore(storeId, fromModal = false) {
+            const store = stores.find(s => s.id === storeId);
+            if (!store) return;
+            
+            if (confirm(`确定要删除门店 "${store.name}" 吗？此操作不可撤销。`)) {
+                const storeIndex = stores.findIndex(s => s.id === storeId);
+                stores.splice(storeIndex, 1);
+                
+                if (currentStoreId === storeId && stores.length > 0) {
+                    const inProgressStore = stores.find(s => s.status === 'in-progress');
+                    currentStoreId = inProgressStore ? inProgressStore.id : stores[0].id;
+                } else if (stores.length === 0) {
+                    currentStoreId = null;
+                }
+                
+                refreshAllComponents();
+                saveData();
+                
+                if (fromModal) {
+                    storeModal.style.display = 'none';
+                }
+                
+                alert('门店已删除！');
+            }
+        }
+        
+        // ============================================
+        // 建店流程管理函数 - 修复版
+        // ============================================
+        
+        function expandAllPhases() {
+            const phaseContents = document.querySelectorAll('.phase-content');
+            const phaseHeaders = document.querySelectorAll('.phase-header');
+            const toggleIcons = document.querySelectorAll('.toggle-icon');
+            
+            phaseContents.forEach(content => content.classList.add('expanded'));
+            phaseHeaders.forEach(header => header.classList.add('active'));
+            toggleIcons.forEach(icon => icon.classList.add('expanded'));
+        }
+        
+        function collapseAllPhases() {
+            const phaseContents = document.querySelectorAll('.phase-content');
+            const phaseHeaders = document.querySelectorAll('.phase-header');
+            const toggleIcons = document.querySelectorAll('.toggle-icon');
+            
+            phaseContents.forEach(content => content.classList.remove('expanded'));
+            phaseHeaders.forEach(header => header.classList.remove('active'));
+            toggleIcons.forEach(icon => icon.classList.remove('expanded'));
+        }
+        
+        function focusOnProcess() {
+            processSection.scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+            
+            processSection.style.boxShadow = '0 10px 30px rgba(74, 110, 224, 0.3)';
+            processSection.style.transition = 'box-shadow 0.5s ease';
+            
+            setTimeout(() => {
+                processSection.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.08)';
+            }, 2000);
+        }
+        
+        function initProcessManager() {
+            const phaseHeaders = document.querySelectorAll('.phase-header');
+            
+            phaseHeaders.forEach(header => {
+                header.addEventListener('click', function() {
+                    const phaseId = this.getAttribute('data-phase');
+                    const content = document.getElementById(`${phaseId}-content`);
+                    const toggleIcon = this.querySelector('.toggle-icon');
+                    const phaseElement = this.closest('.process-phase');
+                    
+                    this.classList.toggle('active');
+                    content.classList.toggle('expanded');
+                    toggleIcon.classList.toggle('expanded');
+                    phaseElement.classList.toggle('expanded');
+                });
+            });
+            
+            const checkboxes = document.querySelectorAll('.task-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('click', function() {
+                    const storeId = currentStoreId;
+                    const store = stores.find(s => s.id === storeId);
+                    
+                    if (store && store.status === 'in-progress') {
+                        this.classList.toggle('checked');
+                        
+                        // 修复：确保任务状态正确保存
+                        updateStoreTaskData(this, store);
+                        updatePhaseStatusAndProgress(this, store);
+                        updateOverallProgress(store);
+                        updateStoreCardProgress(store);
+                        updateStatistics();
+                        
+                        // 立即保存并同步
+                        store.updatedAt = Date.now();
+                        saveData();
+                        
+                        console.log('任务状态已更新并保存');
+                    } else {
+                        alert('只有"建店中"状态的门店可以管理建店任务！');
+                    }
+                });
+            });
+            
+            const firstPhaseHeader = document.querySelector('.phase-header');
+            if (firstPhaseHeader) {
+                firstPhaseHeader.click();
+            }
+        }
+        
+        function loadStoreData(storeId) {
+            const store = stores.find(s => s.id === storeId);
+            if (!store) return;
+            
+            document.querySelector('#process-section .section-header h2').innerHTML = `<i>🏗️</i> 建店流程管理 - ${store.name}`;
+            
+            if (store.status === 'in-progress') {
+                processSection.style.display = 'block';
+                
+                const phases = ['location', 'procedures', 'renovation', 'delivery', 'trial'];
+                const expectedLengths = {
+                    'location': 12,
+                    'procedures': 4,
+                    'renovation': 4,
+                    'delivery': 1,
+                    'trial': 1
+                };
+                
+                phases.forEach(phase => {
+                    // 确保任务数组存在且长度正确
+                    if (!store.tasks[phase] || store.tasks[phase].length !== expectedLengths[phase]) {
+                        store.tasks[phase] = new Array(expectedLengths[phase]).fill(false);
+                    }
+                    
+                    const checkboxes = document.querySelectorAll(`[data-phase="${phase}"] .task-checkbox`);
+                    
+                    checkboxes.forEach((checkbox, taskIndex) => {
+                        checkbox.removeAttribute('data-store');
+                        checkbox.setAttribute('data-store', storeId);
+                        
+                        // 从store中加载保存的状态
+                        if (store.tasks[phase] && store.tasks[phase][taskIndex] !== undefined) {
+                            if (store.tasks[phase][taskIndex]) {
+                                checkbox.classList.add('checked');
+                            } else {
+                                checkbox.classList.remove('checked');
+                            }
+                        }
+                    });
+                });
+                
+                updateAllPhaseStatusesAndProgress(store);
+                updateOverallProgress(store);
+            } else {
+                processSection.style.display = 'none';
+            }
+        }
+        
+        function updateStoreTaskData(checkbox, store) {
+            const phaseItem = checkbox.closest('.process-phase');
+            const phaseId = phaseItem.querySelector('.phase-header').getAttribute('data-phase');
+            const taskIndex = Array.from(phaseItem.querySelectorAll('.task-checkbox')).indexOf(checkbox);
+            
+            if (store && store.tasks[phaseId]) {
+                // 确保任务数组长度正确
+                const expectedLengths = {
+                    'location': 12,
+                    'procedures': 4,
+                    'renovation': 4,
+                    'delivery': 1,
+                    'trial': 1
+                };
+                
+                if (store.tasks[phaseId].length !== expectedLengths[phaseId]) {
+                    store.tasks[phaseId] = new Array(expectedLengths[phaseId]).fill(false);
+                }
+                
+                // 保存任务状态
+                store.tasks[phaseId][taskIndex] = checkbox.classList.contains('checked');
+                
+                // 重新计算门店进度
+                calculateStoreProgress(store);
+                
+                console.log(`任务状态已保存: ${phaseId} - 步骤${taskIndex + 1} = ${store.tasks[phaseId][taskIndex]}`);
+            }
+        }
+        
+        function calculateStoreProgress(store) {
+            let totalTasks = 0;
+            let completedTasks = 0;
+            
+            const phaseTaskCounts = {
+                'location': 12,
+                'procedures': 4,
+                'renovation': 4,
+                'delivery': 1,
+                'trial': 1
+            };
+            
+            for (const [phase, taskCount] of Object.entries(phaseTaskCounts)) {
+                if (store.tasks[phase]) {
+                    for (let i = 0; i < taskCount; i++) {
+                        totalTasks++;
+                        if (store.tasks[phase][i]) {
+                            completedTasks++;
+                        }
+                    }
+                }
+            }
+            
+            const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            store.progress = progress;
+            
+            return progress;
+        }
+        
+        function updatePhaseStatusAndProgress(checkbox, store) {
+            const phaseItem = checkbox.closest('.process-phase');
+            const phaseId = phaseItem.querySelector('.phase-header').getAttribute('data-phase');
+            const phaseTasks = phaseItem.querySelectorAll('.task-checkbox');
+            const statusIndicator = phaseItem.querySelector('.status-indicator');
+            const phaseProgressBar = phaseItem.querySelector('.phase-progress-fill');
+            const phaseProgressText = phaseItem.querySelector('.phase-progress-text');
+            
+            const completedTasks = Array.from(phaseTasks).filter(task => 
+                task.classList.contains('checked')
+            ).length;
+            
+            const totalTasks = phaseTasks.length;
+            const phaseProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+            
+            phaseProgressBar.style.width = `${phaseProgress}%`;
+            phaseProgressText.textContent = `${phaseProgress}%`;
+            
+            if (completedTasks === 0) {
+                statusIndicator.classList.remove('completed', 'in-progress');
+                phaseItem.classList.remove('completed', 'in-progress');
+            } else if (completedTasks === totalTasks) {
+                statusIndicator.classList.remove('in-progress');
+                statusIndicator.classList.add('completed');
+                phaseItem.classList.add('completed');
+                phaseItem.classList.remove('in-progress');
+            } else {
+                statusIndicator.classList.add('in-progress');
+                statusIndicator.classList.remove('completed');
+                phaseItem.classList.add('in-progress');
+                phaseItem.classList.remove('completed');
+            }
+        }
+        
+        function updateAllPhaseStatusesAndProgress(store) {
+            const phases = ['location', 'procedures', 'renovation', 'delivery', 'trial'];
+            
+            phases.forEach(phaseId => {
+                const phaseItem = document.getElementById(`phase-${phaseId}`);
+                if (!phaseItem) return;
+                
+                const phaseTasks = phaseItem.querySelectorAll('.task-checkbox');
+                const statusIndicator = phaseItem.querySelector('.status-indicator');
+                const phaseProgressBar = phaseItem.querySelector('.phase-progress-fill');
+                const phaseProgressText = phaseItem.querySelector('.phase-progress-text');
+                
+                const completedTasks = store.tasks[phaseId] ? 
+                    store.tasks[phaseId].filter(task => task).length : 0;
+                
+                const totalTasks = phaseTasks.length;
+                const phaseProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                
+                phaseProgressBar.style.width = `${phaseProgress}%`;
+                phaseProgressText.textContent = `${phaseProgress}%`;
+                
+                if (completedTasks === 0) {
+                    statusIndicator.classList.remove('completed', 'in-progress');
+                    phaseItem.classList.remove('completed', 'in-progress');
+                } else if (completedTasks === totalTasks) {
+                    statusIndicator.classList.remove('in-progress');
+                    statusIndicator.classList.add('completed');
+                    phaseItem.classList.add('completed');
+                    phaseItem.classList.remove('in-progress');
+                } else {
+                    statusIndicator.classList.add('in-progress');
+                    statusIndicator.classList.remove('completed');
+                    phaseItem.classList.add('in-progress');
+                    phaseItem.classList.remove('completed');
+                }
+            });
+        }
+        
+        function updateOverallProgress(store) {
+            const progress = store.progress;
+            
+            const overallProgressBar = document.getElementById('overall-progress-bar');
+            const overallProgressPercentage = document.getElementById('overall-progress-percentage');
+            
+            overallProgressBar.style.width = `${progress}%`;
+            overallProgressPercentage.textContent = `${progress}%`;
+        }
+        
+        function updateStoreCardProgress(store) {
+            const storeCard = document.querySelector(`.store-card[data-id="${store.id}"]`);
+            if (storeCard) {
+                const progressBar = storeCard.querySelector('.progress-fill-small');
+                const progressText = storeCard.querySelector('.progress-label span:last-child');
+                
+                if (progressBar && progressText) {
+                    progressBar.style.width = `${store.progress}%`;
+                    progressText.textContent = `${store.progress}%`;
+                }
+            }
+        }
+        
+        function updateStatistics() {
+            document.getElementById('total-stores').textContent = stores.length;
+            
+            let totalTasks = 0;
+            let completedTasks = 0;
+            let totalProgress = 0;
+            let inProgressCount = 0;
+            
+            const phaseTaskCounts = {
+                'location': 12,
+                'procedures': 4,
+                'renovation': 4,
+                'delivery': 1,
+                'trial': 1
+            };
+            
+            stores.forEach(store => {
+                if (store.status === 'in-progress') {
+                    inProgressCount++;
+                    totalProgress += store.progress;
+                    
+                    for (const [phase, taskCount] of Object.entries(phaseTaskCounts)) {
+                        if (store.tasks[phase]) {
+                            for (let i = 0; i < taskCount; i++) {
+                                totalTasks++;
+                                if (store.tasks[phase][i]) {
+                                    completedTasks++;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            document.getElementById('completed-tasks').textContent = completedTasks;
+            document.getElementById('total-tasks').textContent = totalTasks;
+            
+            const avgProgress = inProgressCount > 0 ? Math.round(totalProgress / inProgressCount) : 0;
+            document.getElementById('avg-progress').textContent = `${avgProgress}%`;
+        }
+        
+        // ============================================
+        // 网络状态监听
+        // ============================================
+        
+        function handleOnline() {
+            console.log('网络已连接');
+            isOnline = true;
+            updateSyncStatus('success', '在线');
+            setTimeout(() => { realTimeSync(); }, 3000);
+        }
+        
+        function handleOffline() {
+            console.log('网络已断开');
+            isOnline = false;
+            updateSyncStatus('error', '离线模式');
+        }
+        
+        // ============================================
+        // 初始化
+        // ============================================
+        
+        function init() {
+            console.log("初始化加盟交付管理系统...");
+            console.log("当前网址可以分享给任何人：", getShareableUrl());
+            
+            generateDeviceId();
+            loadData();
+            
+            renderStoreCards();
+            renderStoreSelector();
+            initModalEvents();
+            initProcessManager();
+            updateStatistics();
+            
+            if (currentStoreId) {
+                loadStoreData(currentStoreId);
+            }
+            
+            expandAllBtn.addEventListener('click', expandAllPhases);
+            collapseAllBtn.addEventListener('click', collapseAllPhases);
+            
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('storeDate').value = today;
+            
+            document.addEventListener('click', (e) => {
+                if (activeEditDropdown && !activeEditDropdown.contains(e.target)) {
+                    const dropdown = activeEditDropdown.querySelector('.edit-actions-dropdown');
+                    if (dropdown) {
+                        dropdown.classList.remove('show');
+                        activeEditDropdown = null;
+                    }
+                }
+            });
+            
+            window.addEventListener('online', handleOnline);
+            window.addEventListener('offline', handleOffline);
+            
+            // 启动实时同步
+            setInterval(realTimeSync, 5000);
+            
+            addManualSyncButton();
+            
+            console.log("系统初始化完成，设备ID:", deviceId);
+        }
+        
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
